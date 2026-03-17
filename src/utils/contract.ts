@@ -1,6 +1,7 @@
 import { SorobanRpc, Contract, xdr, scValToNative, nativeToScVal } from '@stellar/stellar-sdk';
 import { NETWORK } from './stellar';
 import { transactionTracker, waitForTransactionConfirmation } from './transaction';
+import { AuctionErrorHandler } from './errors';
 
 // Initialize Soroban RPC client
 const server = new SorobanRpc.Server(NETWORK.rpcUrl);
@@ -48,7 +49,10 @@ export class AuctionContractClient {
     } catch (error) {
       console.error('Error initializing auction:', error);
       transactionTracker.updateTransaction(transactionId, 'failed', error instanceof Error ? error.message : 'Unknown error');
-      return { success: false, error, transactionId };
+
+      // Handle and return structured error
+      const auctionError = AuctionErrorHandler.handleContractError(error);
+      return { success: false, error: auctionError, transactionId };
     }
   }
 
@@ -77,7 +81,10 @@ export class AuctionContractClient {
     } catch (error) {
       console.error('Error placing bid:', error);
       transactionTracker.updateTransaction(transactionId, 'failed', error instanceof Error ? error.message : 'Unknown error');
-      return { success: false, error, transactionId };
+
+      // Handle and return structured error
+      const auctionError = AuctionErrorHandler.handleContractError(error);
+      return { success: false, error: auctionError, transactionId };
     }
   }
 
@@ -96,7 +103,10 @@ export class AuctionContractClient {
       return { success: true, data: auctionState };
     } catch (error) {
       console.error('Error getting auction state:', error);
-      return { success: false, error };
+
+      // Handle and return structured error
+      const auctionError = AuctionErrorHandler.handleContractError(error);
+      return { success: false, error: auctionError };
     }
   }
 
@@ -118,7 +128,10 @@ export class AuctionContractClient {
     } catch (error) {
       console.error('Error finalizing auction:', error);
       transactionTracker.updateTransaction(transactionId, 'failed', error instanceof Error ? error.message : 'Unknown error');
-      return { success: false, error, transactionId };
+
+      // Handle and return structured error
+      const auctionError = AuctionErrorHandler.handleContractError(error);
+      return { success: false, error: auctionError, transactionId };
     }
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getContractClient } from '@/utils/contract';
 import { CONTRACT_IDS } from '@/utils/stellar';
+import { useTransactionTracker } from '@/hooks/useTransactionTracker';
 
 interface AuctionState {
   auction_item: string;
@@ -19,6 +20,7 @@ export function useAuctionContract() {
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const { addTransaction, updateTransaction } = useTransactionTracker();
 
   useEffect(() => {
     // Initialize contract client
@@ -54,7 +56,7 @@ export function useAuctionContract() {
   const placeBid = async (bidder: string, amount: number) => {
     if (!contractClient) {
       setError('Contract client not initialized');
-      return { success: false, error: 'Contract client not initialized' };
+      return { success: false, error: 'Contract client not initialized', transactionId: null };
     }
 
     setLoading(true);
@@ -67,15 +69,15 @@ export function useAuctionContract() {
       if (result.success) {
         // Refresh auction state after successful bid
         await fetchAuctionState();
-        return { success: true };
+        return { success: true, transactionId: result.transactionId };
       } else {
         setError(result.error?.message || 'Failed to place bid');
-        return { success: false, error: result.error?.message || 'Failed to place bid' };
+        return { success: false, error: result.error?.message || 'Failed to place bid', transactionId: result.transactionId };
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      return { success: false, error: errorMessage };
+      return { success: false, error: errorMessage, transactionId: null };
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ export function useAuctionContract() {
   ) => {
     if (!contractClient) {
       setError('Contract client not initialized');
-      return { success: false, error: 'Contract client not initialized' };
+      return { success: false, error: 'Contract client not initialized', transactionId: null };
     }
 
     setLoading(true);
@@ -108,15 +110,15 @@ export function useAuctionContract() {
       if (result.success) {
         // Refresh auction state after successful initialization
         await fetchAuctionState();
-        return { success: true };
+        return { success: true, transactionId: result.transactionId };
       } else {
         setError(result.error?.message || 'Failed to initialize auction');
-        return { success: false, error: result.error?.message || 'Failed to initialize auction' };
+        return { success: false, error: result.error?.message || 'Failed to initialize auction', transactionId: result.transactionId };
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      return { success: false, error: errorMessage };
+      return { success: false, error: errorMessage, transactionId: null };
     } finally {
       setLoading(false);
     }

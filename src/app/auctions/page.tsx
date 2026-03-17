@@ -5,6 +5,7 @@ import AuctionDisplay from '@/components/AuctionDisplay';
 import PlaceBidForm from '@/components/PlaceBidForm';
 import WalletConnection from '@/components/WalletConnection';
 import EventFeed from '@/components/EventFeed';
+import TransactionHistory from '@/components/TransactionHistory';
 import { useWallet } from '@/context/WalletContext';
 
 export default function AuctionsPage() {
@@ -33,6 +34,9 @@ export default function AuctionsPage() {
           </div>
           <div className="mt-6">
             <PlaceBidForm bidder={address} />
+          </div>
+          <div className="mt-6">
+            <TransactionHistory />
           </div>
         </>
       )}

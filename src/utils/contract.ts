@@ -1,5 +1,6 @@
 import { SorobanRpc, Contract, xdr, scValToNative, nativeToScVal } from '@stellar/stellar-sdk';
 import { NETWORK } from './stellar';
+import { transactionTracker, waitForTransactionConfirmation } from './transaction';
 
 // Initialize Soroban RPC client
 const server = new SorobanRpc.Server(NETWORK.rpcUrl);
@@ -20,6 +21,14 @@ export class AuctionContractClient {
     startingPrice: number,
     auctionDuration: number
   ) {
+    const transactionId = `init_${Date.now()}`;
+    transactionTracker.addTransaction(transactionId, 'Initialize Auction', {
+      auctionItem,
+      description,
+      startingPrice,
+      auctionDuration
+    });
+
     try {
       const transaction = await server.prepareTransaction(
         this.contract.call(
@@ -31,17 +40,26 @@ export class AuctionContractClient {
         )
       );
 
-      // Sign and submit transaction
-      // This would be implemented with the user's wallet
-      return { success: true, transaction };
+      // In a real implementation, you would sign and submit the transaction
+      // For now, we'll simulate success
+      transactionTracker.updateTransaction(transactionId, 'success', 'SIMULATED_HASH');
+
+      return { success: true, transaction, transactionId };
     } catch (error) {
       console.error('Error initializing auction:', error);
-      return { success: false, error };
+      transactionTracker.updateTransaction(transactionId, 'failed', error instanceof Error ? error.message : 'Unknown error');
+      return { success: false, error, transactionId };
     }
   }
 
   // Place a bid on the auction
   async placeBid(sourceAccount: string, bidder: string, amount: number) {
+    const transactionId = `bid_${Date.now()}`;
+    transactionTracker.addTransaction(transactionId, 'Place Bid', {
+      bidder,
+      amount
+    });
+
     try {
       const transaction = await server.prepareTransaction(
         this.contract.call(
@@ -51,12 +69,15 @@ export class AuctionContractClient {
         )
       );
 
-      // Sign and submit transaction
-      // This would be implemented with the user's wallet
-      return { success: true, transaction };
+      // In a real implementation, you would sign and submit the transaction
+      // For now, we'll simulate success
+      transactionTracker.updateTransaction(transactionId, 'success', 'SIMULATED_HASH');
+
+      return { success: true, transaction, transactionId };
     } catch (error) {
       console.error('Error placing bid:', error);
-      return { success: false, error };
+      transactionTracker.updateTransaction(transactionId, 'failed', error instanceof Error ? error.message : 'Unknown error');
+      return { success: false, error, transactionId };
     }
   }
 
@@ -81,17 +102,23 @@ export class AuctionContractClient {
 
   // Finalize the auction
   async finalizeAuction(sourceAccount: string) {
+    const transactionId = `finalize_${Date.now()}`;
+    transactionTracker.addTransaction(transactionId, 'Finalize Auction');
+
     try {
       const transaction = await server.prepareTransaction(
         this.contract.call("finalize_auction")
       );
 
-      // Sign and submit transaction
-      // This would be implemented with the user's wallet
-      return { success: true, transaction };
+      // In a real implementation, you would sign and submit the transaction
+      // For now, we'll simulate success
+      transactionTracker.updateTransaction(transactionId, 'success', 'SIMULATED_HASH');
+
+      return { success: true, transaction, transactionId };
     } catch (error) {
       console.error('Error finalizing auction:', error);
-      return { success: false, error };
+      transactionTracker.updateTransaction(transactionId, 'failed', error instanceof Error ? error.message : 'Unknown error');
+      return { success: false, error, transactionId };
     }
   }
 }

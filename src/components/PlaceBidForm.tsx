@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuctionContract } from '@/hooks/useAuctionContract';
+import TransactionStatusIndicator from '@/components/TransactionStatusIndicator';
 
 interface PlaceBidFormProps {
   bidder: string;
@@ -11,6 +12,7 @@ export default function PlaceBidForm({ bidder }: PlaceBidFormProps) {
   const { auctionState, placeBid, loading } = useAuctionContract();
   const [bidAmount, setBidAmount] = useState<string>('');
   const [message, setMessage] = useState<string>('');
+  const [transactionId, setTransactionId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +34,10 @@ export default function PlaceBidForm({ bidder }: PlaceBidFormProps) {
     }
 
     const result = await placeBid(bidder, amount);
+
+    if (result.transactionId) {
+      setTransactionId(result.transactionId);
+    }
 
     if (result.success) {
       setMessage('Bid placed successfully!');
@@ -77,6 +83,13 @@ export default function PlaceBidForm({ bidder }: PlaceBidFormProps) {
             {loading ? 'Placing Bid...' : 'Place Bid'}
           </button>
         </div>
+
+        {transactionId && (
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+            <span className="text-sm text-gray-600 dark:text-gray-300">Transaction Status:</span>
+            <TransactionStatusIndicator transactionId={transactionId} />
+          </div>
+        )}
 
         {message && (
           <div className={`p-3 rounded-md ${message.includes('Error') || message.includes('higher') ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100'}`}>

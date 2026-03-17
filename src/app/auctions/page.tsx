@@ -4,6 +4,7 @@ import React from 'react';
 import AuctionDisplay from '@/components/AuctionDisplay';
 import PlaceBidForm from '@/components/PlaceBidForm';
 import WalletConnection from '@/components/WalletConnection';
+import EventFeed from '@/components/EventFeed';
 import { useWallet } from '@/context/WalletContext';
 
 export default function AuctionsPage() {
@@ -26,6 +27,9 @@ export default function AuctionsPage() {
         <>
           <div className="mt-6">
             <AuctionDisplay />
+          </div>
+          <div className="mt-6">
+            <EventFeed />
           </div>
           <div className="mt-6">
             <PlaceBidForm bidder={address} />

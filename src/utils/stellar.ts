@@ -2,16 +2,16 @@ import { Networks } from '@stellar/stellar-sdk';
 
 // Network configuration
 export const NETWORK = {
-  type: 'testnet' as const,
+  type: process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet',
   passphrase: Networks.TESTNET,
-  rpcUrl: 'https://soroban-testnet.stellar.org',
-  horizonUrl: 'https://horizon-testnet.stellar.org'
+  rpcUrl: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org',
+  horizonUrl: process.env.NEXT_PUBLIC_HORIZON_URL || 'https://horizon-testnet.stellar.org'
 };
 
 // Contract configuration
 export const CONTRACT_IDS = {
   // Will be populated after contract deployment
-  auction: ''
+  auction: process.env.NEXT_PUBLIC_AUCTION_CONTRACT_ID || ''
 };
 
 // Wallet configuration

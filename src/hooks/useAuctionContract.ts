@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getContractClient } from '@/utils/contract';
-import { CONTRACT_IDS } from '@/utils/stellar';
+import { getContractClient, sorobanServer } from '@/utils/contract';
+import { CONTRACT_IDS, NETWORK } from '@/utils/stellar';
 import { useTransactionTracker } from '@/hooks/useTransactionTracker';
 import { useErrorHandler } from '@/context/ErrorContext';
+import { useWallet } from '@/context/WalletContext';
+import { waitForTransactionConfirmation } from '@/utils/transaction';
 
 interface AuctionState {
   auction_item: string;
@@ -21,8 +23,9 @@ export function useAuctionContract() {
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const { addTransaction, updateTransaction } = useTransactionTracker();
+  const { updateTransaction } = useTransactionTracker();
   const { handleError } = useErrorHandler();
+  const { address: walletAddress, signTransaction } = useWallet();
 
   useEffect(() => {
     // Initialize contract client
@@ -71,22 +74,48 @@ export function useAuctionContract() {
       return { success: false, error: auctionError.message, transactionId: null };
     }
 
+    if (!walletAddress || !signTransaction) {
+      const auctionError = handleError(
+        { type: 'wallet_not_connected', message: 'Please connect your wallet to place a bid' },
+        'placeBid'
+      );
+      setError(auctionError.message);
+      return { success: false, error: auctionError.message, transactionId: null };
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // In a real implementation, you would pass the source account from the wallet
-      const result = await contractClient.placeBid('SOURCE_ACCOUNT', bidder, amount);
+      const result = await contractClient.placeBid(walletAddress, bidder, amount);
 
-      if (result.success) {
-        // Refresh auction state after successful bid
+      if (!result.success || !result.transaction) {
+        if (!result.success && result.error) {
+          const auctionError = handleError(result.error, 'placeBid');
+          setError(auctionError.message);
+        }
+        return {
+          success: false,
+          error: !result.success && 'error' in result ? (typeof (result as { error: unknown }).error === 'object' && (result as { error: { message?: string } }).error?.message ? (result as { error: { message: string } }).error.message : String((result as { error: unknown }).error)) : undefined,
+          transactionId: result.transactionId ?? null,
+        };
+      }
+
+      const txXdr = result.transaction.toXDR();
+      const signedXdr = await signTransaction(txXdr, NETWORK.passphrase);
+      const { hash } = await contractClient.submitSignedTransaction(signedXdr);
+
+      const confirm = await waitForTransactionConfirmation(sorobanServer, hash);
+      updateTransaction(result.transactionId!, confirm.status === 'success' ? 'success' : 'failed', confirm.status === 'success' ? hash : confirm.error);
+
+      if (confirm.status === 'success') {
         await fetchAuctionState();
         return { success: true, transactionId: result.transactionId };
-      } else {
-        const auctionError = handleError(result.error, 'placeBid');
-        setError(auctionError.message);
-        return { success: false, error: auctionError.message, transactionId: result.transactionId };
       }
+      const errMsg = confirm.error ?? 'Transaction failed';
+      handleError({ message: errMsg }, 'placeBid');
+      setError(errMsg);
+      return { success: false, error: errMsg, transactionId: result.transactionId };
     } catch (err) {
       const auctionError = handleError(err, 'placeBid');
       setError(auctionError.message);
@@ -111,28 +140,54 @@ export function useAuctionContract() {
       return { success: false, error: auctionError.message, transactionId: null };
     }
 
+    if (!walletAddress || !signTransaction) {
+      const auctionError = handleError(
+        { type: 'wallet_not_connected', message: 'Please connect your wallet to create an auction' },
+        'initializeAuction'
+      );
+      setError(auctionError.message);
+      return { success: false, error: auctionError.message, transactionId: null };
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // In a real implementation, you would pass the source account from the wallet
       const result = await contractClient.initializeAuction(
-        'SOURCE_ACCOUNT',
+        walletAddress,
         auctionItem,
         description,
         startingPrice,
         auctionDuration
       );
 
-      if (result.success) {
-        // Refresh auction state after successful initialization
+      if (!result.success || !result.transaction) {
+        if (!result.success && result.error) {
+          const auctionError = handleError(result.error, 'initializeAuction');
+          setError(auctionError.message);
+        }
+        return {
+          success: false,
+          error: !result.success && 'error' in result ? (typeof (result as { error: unknown }).error === 'object' && (result as { error: { message?: string } }).error?.message ? (result as { error: { message: string } }).error.message : String((result as { error: unknown }).error)) : undefined,
+          transactionId: result.transactionId ?? null,
+        };
+      }
+
+      const txXdr = result.transaction.toXDR();
+      const signedXdr = await signTransaction(txXdr, NETWORK.passphrase);
+      const { hash } = await contractClient.submitSignedTransaction(signedXdr);
+
+      const confirm = await waitForTransactionConfirmation(sorobanServer, hash);
+      updateTransaction(result.transactionId!, confirm.status === 'success' ? 'success' : 'failed', confirm.status === 'success' ? hash : confirm.error);
+
+      if (confirm.status === 'success') {
         await fetchAuctionState();
         return { success: true, transactionId: result.transactionId };
-      } else {
-        const auctionError = handleError(result.error, 'initializeAuction');
-        setError(auctionError.message);
-        return { success: false, error: auctionError.message, transactionId: result.transactionId };
       }
+      const errMsg = confirm.error ?? 'Transaction failed';
+      handleError({ message: errMsg }, 'initializeAuction');
+      setError(errMsg);
+      return { success: false, error: errMsg, transactionId: result.transactionId };
     } catch (err) {
       const auctionError = handleError(err, 'initializeAuction');
       setError(auctionError.message);

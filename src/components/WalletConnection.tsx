@@ -3,39 +3,43 @@
 import React, { useState } from 'react';
 
 interface WalletConnectionProps {
-  onConnect: (address: string) => void;
-  onDisconnect: () => void;
+  onConnect: () => Promise<void>;
+  onDisconnect: () => Promise<void>;
   isConnected: boolean;
   address: string | null;
+  isKitReady?: boolean;
 }
 
 export default function WalletConnection({
   onConnect,
   onDisconnect,
   isConnected,
-  address
+  address,
+  isKitReady = true,
 }: WalletConnectionProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleConnect = async () => {
     setLoading(true);
-
+    setError(null);
     try {
-      // In a real implementation, this would connect to the actual wallet
-      // For now, we'll simulate a connection with a placeholder address
-      setTimeout(() => {
-        const placeholderAddress = "GABCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
-        onConnect(placeholderAddress);
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Error connecting wallet:', error);
+      await onConnect();
+    } catch (err) {
+      console.error('Error connecting wallet:', err);
+      setError(err instanceof Error ? err.message : 'Failed to connect wallet');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleDisconnect = () => {
-    onDisconnect();
+  const handleDisconnect = async () => {
+    setError(null);
+    try {
+      await onDisconnect();
+    } catch (err) {
+      console.error('Error disconnecting wallet:', err);
+    }
   };
 
   return (
@@ -44,11 +48,21 @@ export default function WalletConnection({
         Wallet Connection
       </h2>
 
+      {!isKitReady && (
+        <p className="text-sm text-amber-600 dark:text-amber-400 mb-4">
+          Loading wallet support...
+        </p>
+      )}
+
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
+      )}
+
       {!isConnected ? (
         <button
           onClick={handleConnect}
-          disabled={loading}
-          className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={loading || !isKitReady}
+          className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ${loading || !isKitReady ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {loading ? 'Connecting...' : 'Connect Wallet'}
         </button>

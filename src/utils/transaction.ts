@@ -1,4 +1,4 @@
-import { TransactionBuilder, SorobanRpc } from '@stellar/stellar-sdk';
+import { TransactionBuilder, rpc } from '@stellar/stellar-sdk';
 import { NETWORK } from './stellar';
 
 // Transaction status types
@@ -110,7 +110,7 @@ export function generateTransactionId(): string {
 
 // Utility function to wait for transaction confirmation
 export async function waitForTransactionConfirmation(
-  server: SorobanRpc.Server,
+  server: rpc.Server,
   transactionHash: string,
   timeoutMs: number = 30000
 ): Promise<{ status: 'success' | 'failed'; result?: any; error?: string }> {
@@ -128,7 +128,7 @@ export async function waitForTransactionConfirmation(
       } else if (transactionResponse.status === 'FAILED') {
         return {
           status: 'failed',
-          error: transactionResponse.resultXdr ?? 'Transaction failed'
+          error: transactionResponse.resultXdr != null ? String(transactionResponse.resultXdr) : 'Transaction failed'
         };
       }
 

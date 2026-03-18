@@ -101,7 +101,7 @@ export function useAuctionContract() {
     description: string,
     startingPrice: number,
     auctionDuration: number
-  ) {
+  ): Promise<{ success: boolean; error?: string; transactionId?: string | null }> => {
     if (!contractClient) {
       const auctionError = handleError(
         { type: 'contract_not_initialized', message: 'Contract client not initialized' },

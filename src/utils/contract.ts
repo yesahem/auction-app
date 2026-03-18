@@ -1,10 +1,11 @@
-import { SorobanRpc, Contract, xdr, scValToNative, nativeToScVal } from '@stellar/stellar-sdk';
+import { rpc, Contract, xdr, scValToNative, nativeToScVal } from '@stellar/stellar-sdk';
+import type { Transaction } from '@stellar/stellar-base';
 import { NETWORK } from './stellar';
 import { transactionTracker, waitForTransactionConfirmation } from './transaction';
 import { AuctionErrorHandler } from './errors';
 
-// Initialize Soroban RPC client
-const server = new SorobanRpc.Server(NETWORK.rpcUrl);
+// Initialize Soroban RPC client (rpc.Server in SDK 14)
+const server = new rpc.Server(NETWORK.rpcUrl);
 
 // Auction contract client
 export class AuctionContractClient {
@@ -38,7 +39,7 @@ export class AuctionContractClient {
           nativeToScVal(description, { type: 'symbol' }),
           nativeToScVal(startingPrice, { type: 'i128' }),
           nativeToScVal(auctionDuration, { type: 'u64' })
-        )
+        ) as unknown as Transaction
       );
 
       // In a real implementation, you would sign and submit the transaction
@@ -70,7 +71,7 @@ export class AuctionContractClient {
           "place_bid",
           nativeToScVal(bidder, { type: 'address' }),
           nativeToScVal(amount, { type: 'i128' })
-        )
+        ) as unknown as Transaction
       );
 
       // In a real implementation, you would sign and submit the transaction
@@ -92,14 +93,15 @@ export class AuctionContractClient {
   async getAuctionState() {
     try {
       const result = await server.simulateTransaction(
-        this.contract.call("get_auction_state")
+        this.contract.call("get_auction_state") as unknown as Transaction
       );
 
-      if (result.error) {
-        throw new Error(result.error);
+      const simResult = result as { error?: string; returnValue?: xdr.ScVal };
+      if (simResult.error) {
+        throw new Error(simResult.error);
       }
 
-      const auctionState = scValToNative(result.returnValue);
+      const auctionState = scValToNative(simResult.returnValue!);
       return { success: true, data: auctionState };
     } catch (error) {
       console.error('Error getting auction state:', error);
@@ -117,7 +119,7 @@ export class AuctionContractClient {
 
     try {
       const transaction = await server.prepareTransaction(
-        this.contract.call("finalize_auction")
+        this.contract.call("finalize_auction") as unknown as Transaction
       );
 
       // In a real implementation, you would sign and submit the transaction

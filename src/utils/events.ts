@@ -1,8 +1,8 @@
-import { SorobanRpc, TransactionBuilder, Networks } from '@stellar/stellar-sdk';
+import { rpc } from '@stellar/stellar-sdk';
 import { NETWORK } from './stellar';
 
-// Initialize Soroban RPC client
-const server = new SorobanRpc.Server(NETWORK.rpcUrl);
+// Initialize Soroban RPC client (rpc.Server in SDK 14)
+const server = new rpc.Server(NETWORK.rpcUrl);
 
 // Event listener for auction events
 export class AuctionEventListener {

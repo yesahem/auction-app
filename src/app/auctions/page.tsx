@@ -9,7 +9,7 @@ import TransactionHistory from '@/components/TransactionHistory';
 import { useWallet } from '@/context/WalletContext';
 
 export default function AuctionsPage() {
-  const { isConnected, address, connectWallet, disconnectWallet } = useWallet();
+  const { isConnected, address, connectWallet, disconnectWallet, isKitReady } = useWallet();
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -22,6 +22,7 @@ export default function AuctionsPage() {
         onDisconnect={disconnectWallet}
         isConnected={isConnected}
         address={address}
+        isKitReady={isKitReady}
       />
 
       {isConnected && address && (
